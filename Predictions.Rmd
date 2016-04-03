@@ -2,7 +2,9 @@
 title: "prediction data training."
 author: "Rodrigo Farruguia"
 date: "April 2, 2016"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ## Introduction
@@ -23,6 +25,7 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 downloading the data
 
 ```{r}
+knitr::opts_chunk$set(echo = TRUE)
 if (!file.exists("trainfile")) {
     download.file(
         "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
@@ -96,24 +99,27 @@ head(subdatatesting)
 lets see if any patterns emerge! using correlation.
 
 
-```{r, echo=FALSE}
+```{r}
 corrPlot <- cor(subdatatraining[, -53])
-corrplot(corrPlot, method="color")
+plot1 <- corrplot(corrPlot, method="color")
+plot1
 ```
 
 lets get a better look at the frequency of levels in the subtraining data set. level A in the red is the more frequent occurance with over 4000 and level D in the yellow has the lease with about 2500. 
 
-```{r, echo= FALSE}
-plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subdatatraining dataset", xlab="classe levels", ylab="Frequency")
+```{r}
+plot2 <- plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subdatatraining dataset", xlab="classe levels", ylab="Frequency")
+plot2
 ```
 
 ## Prediction Models
 A prediction model using a decision tree. 
 
-```{r, echo=FALSE}
+```{r}
 model1 <- rpart(classe ~ ., data=subdatatraining, method="class")
 prediction1 <- predict(model1, subdatatesting, type = "class")
-rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+plot3 <- rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+plot3
 ```
 
 lets test our results 
@@ -172,6 +178,7 @@ Accuracy for Random Forest model was 0.9944 (95% CI: (0.9925, 0.9959)) compared 
 
 corrPlot <- cor(subdatatraining[, -53])
 corrplot(corrPlot, method="color")
+
 
 plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subTraining dataset", xlab="classe levels", ylab="Frequency")
 rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
