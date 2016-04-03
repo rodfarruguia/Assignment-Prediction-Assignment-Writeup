@@ -25,6 +25,7 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 downloading the data
 
 ```{r}
+setwd("C:/Users/Rodrigo/Documents/PredictionAssignment/")
 knitr::opts_chunk$set(echo = TRUE)
 if (!file.exists("trainfile")) {
     download.file(
@@ -102,7 +103,7 @@ lets see if any patterns emerge! using correlation.
 ```{r}
 corrPlot <- cor(subdatatraining[, -53])
 plot1 <- corrplot(corrPlot, method="color")
-plot1
+
 ```
 
 lets get a better look at the frequency of levels in the subtraining data set. level A in the red is the more frequent occurance with over 4000 and level D in the yellow has the lease with about 2500. 
@@ -119,7 +120,7 @@ A prediction model using a decision tree.
 model1 <- rpart(classe ~ ., data=subdatatraining, method="class")
 prediction1 <- predict(model1, subdatatesting, type = "class")
 plot3 <- rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
-plot3
+
 ```
 
 lets test our results 
