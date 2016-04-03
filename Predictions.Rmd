@@ -5,11 +5,6 @@ date: "April 2, 2016"
 output: html_document
 ---
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## Introduction
 
 Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
@@ -53,6 +48,7 @@ library(manipulate)
 library(xtable)
 library(ggplot2)
 library(knitr)
+library(markdown)
 library(randomForest)# just in case i need to generate one for regression
 ```
 ###cleaning data, making it tidy.
@@ -80,8 +76,10 @@ dim(datatraining)
 dim(datatesting)
 table(datatraining$classe)
 ```
+
 #Partitioning to allow cross-validation
 The training data set is partionned into 2 sets: subdatatraining 60% and subdatatesting 40%.
+
 
 ```{r}
 set.seed(1)#for reproducability
@@ -93,7 +91,9 @@ dim(subdatatesting)
 head(subdatatraining)
 head(subdatatesting)
 ```
+
 lets see if any patterns emerge! using correlation.
+
 
 ```{r, echo=FALSE}
 corrPlot <- cor(subdatatraining[, -53])
@@ -103,8 +103,9 @@ corrplot(corrPlot, method="color")
 lets get a better look at the frequency of levels in the subtraining data set. level A in the red is the more frequent occurance with over 4000 and level D in the yellow has the lease with about 2500. 
 
 ```{r, echo= FALSE}
-plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subTraining dataset", xlab="classe levels", ylab="Frequency")
+plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subdatatraining dataset", xlab="classe levels", ylab="Frequency")
 ```
+
 ## Prediction Models
 A prediction model using a decision tree. 
 
@@ -172,7 +173,6 @@ corrPlot <- cor(subdatatraining[, -53])
 corrplot(corrPlot, method="color")
 
 plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subTraining dataset", xlab="classe levels", ylab="Frequency")
-
 rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
 
 model1 <- rpart(classe ~ ., data=subdatatraining, method="class")
