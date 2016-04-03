@@ -47,6 +47,7 @@ library(corrplot)
 library(manipulate)
 library(xtable)
 library(ggplot2)
+library(lattice)
 library(knitr)
 library(markdown)
 library(randomForest)# just in case i need to generate one for regression
