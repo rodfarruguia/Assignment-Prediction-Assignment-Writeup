@@ -1,0 +1,183 @@
+---
+title: "prediction data training."
+author: "Rodrigo Farruguia"
+date: "April 2, 2016"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## Data Proccessing 
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+downloading the data
+
+```{r}
+if (!file.exists("trainfile")) {
+    download.file(
+        "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+        destfile = "pml-training.csv")
+}
+if (!file.exists("testfile")) {
+    download.file(
+        "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",
+        destfile = "pml-testing.csv")
+}
+
+trainfile <- "pml-training.csv"
+testfile  <- "pml-testing.csv"
+```
+loading libraries
+
+```{r}
+library(rpart)#for regressive partitioning.
+library(rpart.plot)# for decision tree plot.
+library(caret)
+library(corrplot)
+library(manipulate)
+library(xtable)
+library(ggplot2)
+library(knitr)
+library(randomForest)# just in case i need to generate one for regression
+```
+###cleaning data, making it tidy.
+
+```{r}
+datatraining <- read.csv(trainfile,na.strings=c("NA","#DIV/0!",""))
+datatesting <- read.csv(testfile,na.strings=c("NA","#DIV/0!",""))
+```
+taking out all the columns with missing values 
+
+```{r}
+datatraining <- datatraining[,colSums(is.na(datatraining)) == 0]
+datatesting <- datatesting[,colSums(is.na(datatesting)) == 0]
+```
+taking out all variables that are not of interest
+```{r}
+datatraining <- datatraining[,-c(1:7)]
+datatesting <- datatesting[,-c(1:7)]
+```
+
+the dimmensions of the data
+
+```{r}
+dim(datatraining)
+dim(datatesting)
+table(datatraining$classe)
+```
+#Partitioning to allow cross-validation
+The training data set is partionned into 2 sets: subdatatraining 60% and subdatatesting 40%.
+
+```{r}
+set.seed(1)#for reproducability
+subsamples <- createDataPartition(y=datatraining$classe, p=0.60, list=FALSE)
+subdatatraining <- datatraining[subsamples, ] 
+subdatatesting <- datatraining[-subsamples, ]
+dim(subdatatraining)
+dim(subdatatesting)
+head(subdatatraining)
+head(subdatatesting)
+```
+lets see if any patterns emerge! using correlation.
+
+```{r, echo=FALSE}
+corrPlot <- cor(subdatatraining[, -53])
+corrplot(corrPlot, method="color")
+```
+
+lets get a better look at the frequency of levels in the subtraining data set. level A in the red is the more frequent occurance with over 4000 and level D in the yellow has the lease with about 2500. 
+
+```{r, echo= FALSE}
+plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subTraining dataset", xlab="classe levels", ylab="Frequency")
+```
+## Prediction Models
+A prediction model using a decision tree. 
+
+```{r, echo=FALSE}
+model1 <- rpart(classe ~ ., data=subdatatraining, method="class")
+prediction1 <- predict(model1, subdatatesting, type = "class")
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+lets test our results 
+
+```{r}
+confusionMatrix(prediction1, subdatatesting$classe)
+```
+
+second prediction model using random forest. 
+
+```{r}
+model2 <- randomForest(classe ~. , data=subdatatraining, method="class")
+prediction2 <- predict(model2, subdatatesting, type = "class")
+confusionMatrix(prediction2, subdatatesting$classe)
+```
+
+##Evaluatin of sample error, using 4 fold cross validation. 
+
+```{r}
+rf1<- train(x=subdatatraining[,-53],y=subdatatraining$classe,method="rf",
+                trControl=trainControl(method = "cv", number = 4),
+                data=subdatatraining,do.trace=F,ntree=250)
+rf1
+```
+
+in sample error and out of sample error. 
+
+```{r}
+predictiontrainingrf1 <- predict(rf1$finalModel,newdata=subdatatraining)
+insampleerrorforrf1<- 100- (mean((predictiontrainingrf1 == subdatatraining$classe)*1)*100)
+insampleerrorforrf1
+
+predictiontestingrf1 <- predict(rf1,subdatatesting)
+outofsampleerrorrf1 <- 100 -(mean((predictiontestingrf1 == subdatatesting$classe)*1)*100)
+outofsampleerrorrf1
+
+predictiontestingrf1 <- predict(rf1,datatesting[,-53])
+predictiontestingrf1
+table(predictiontestingrf1)
+
+```
+
+
+
+##Decision/Conclusion
+
+Random Forest algorithm performed better than Decision Trees.
+Accuracy for Random Forest model was 0.9944 (95% CI: (0.9925, 0.9959)) compared to 0.7438 (95% CI: (0.734, 0.7534)) for Decision Tree model. The random Forest model is choosen. The accuracy of the model is 0.9929. With an accuracy above 99% on our cross-validation data, we can expect that very few, or none, of the test samples will be missclassified.
+
+        **Random forests are suitable when to handling a large number of inputs, especially when the interactions between variables are unknown.
+        **Random forest's built in cross-validation component that gives an unbiased estimate of the forest's out-of-sample (or bag) (OOB) error rate.
+        **A Random forest can handle unscaled variables and categorical variables. This is more forgiving with the cleaning of the data.
+        
+
+## Index Including Plots
+
+corrPlot <- cor(subdatatraining[, -53])
+corrplot(corrPlot, method="color")
+
+plot(subdatatraining$classe, col=rainbow(20), main="Levels of classe within the subTraining dataset", xlab="classe levels", ylab="Frequency")
+
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+
+model1 <- rpart(classe ~ ., data=subdatatraining, method="class")
+prediction1 <- predict(model1, subdatatesting, type = "class")
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+
+
+
